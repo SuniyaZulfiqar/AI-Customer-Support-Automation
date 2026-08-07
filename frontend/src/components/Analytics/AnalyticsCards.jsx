@@ -28,7 +28,14 @@ function AnalyticsCards({ filters }) {
         }
       );
 
-      setStats(res.data);
+      console.log("Dashboard API response:", res.data);
+
+      setStats({
+        total_tickets: res.data.total_tickets ?? 0,
+        complaints: res.data.complaints ?? 0,
+        open_tickets: res.data.open_tickets ?? 0,
+        closed_tickets: res.data.closed_tickets ?? 0,
+      });
     } catch (err) {
       console.error("Analytics Cards Error:", err);
     }
@@ -62,15 +69,15 @@ function AnalyticsCards({ filters }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {cards.map((card) => (
         <div
           key={card.title}
           className={`bg-gradient-to-r ${card.color} rounded-2xl p-6 shadow-lg hover:scale-105 transition-transform duration-300`}
         >
-          <div className="flex justify-between items-center">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/80 text-sm uppercase tracking-wide">
+              <p className="text-white/90 text-sm font-medium">
                 {card.title}
               </p>
 
