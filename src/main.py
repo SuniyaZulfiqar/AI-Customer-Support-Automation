@@ -1,18 +1,17 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import json
 import requests
 
-from services.ai_classifier import classify_message
-from services.ai_copilot import ask_database
-from fastapi.middleware.cors import CORSMiddleware   
-from database.dashboard import get_dashboard_data
-from services.dashboard import get_dashboard_stats
-import services.analytics as analytics
-
-from services.executive_summary import generate_summary
-from services.analytics import get_top_categories
-from services.predictive_ai import predictive_ai
+from src.services.ai_classifier import classify_message
+from src.services.ai_copilot import ask_database
+from src.database.dashboard import get_dashboard_data
+from src.services.dashboard import get_dashboard_stats
+import src.services.analytics as analytics
+from src.services.executive_summary import generate_summary
+from src.services.analytics import get_top_categories
+from src.services.predictive_ai import predictive_ai
 
 app = FastAPI(
     title="AI Customer Support API",
@@ -318,7 +317,7 @@ def predictive():
 # REPORTS
 # ==========================
 
-from services.reports import (
+from src.services.reports import (
     get_report_history,
     export_csv,
     export_excel,
@@ -338,7 +337,7 @@ def download_csv():
 def download_excel():
     return export_excel()
 
-from services.reports import get_report_data
+from src.services.reports import get_report_data
 
 @app.get("/reports/test")
 def reports_test():

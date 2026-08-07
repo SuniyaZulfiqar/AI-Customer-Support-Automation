@@ -1,5 +1,5 @@
 print("✅ NEW analytics.py loaded")
-from database.connection import get_connection
+from src.database.connection import get_connection
 
 
 def build_where_clause(category=None, urgency=None, status=None):

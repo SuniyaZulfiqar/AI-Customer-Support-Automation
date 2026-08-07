@@ -1,4 +1,4 @@
-from database.connection import get_connection
+from src.database.connection import get_connection
 
 
 def predictive_ai():

@@ -1,6 +1,6 @@
 import pandas as pd
 from fastapi.responses import FileResponse
-from database.connection import get_connection
+from src.database.connection import get_connection
 
 
 def get_report_data():

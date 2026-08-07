@@ -1,4 +1,4 @@
-from database.queries import execute_query
+from src.database.queries import execute_query
 
 
 def run_sql(sql: str):

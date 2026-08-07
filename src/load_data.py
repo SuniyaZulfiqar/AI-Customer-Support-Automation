@@ -1,6 +1,6 @@
 import pandas as pd
 
-from database.insert import insert_dataframe
+from src.database.insert import insert_dataframe
 
 # Load the generated dataset
 df = pd.read_csv("../data/customer_analysis.csv")

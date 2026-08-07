@@ -1,6 +1,6 @@
-from services.sql_generator import generate_sql
-from services.sql_executor import run_sql
-from services.report_generator import generate_report
+from src.services.sql_generator import generate_sql
+from src.services.sql_executor import run_sql
+from src.services.report_generator import generate_report
 
 
 def ask_database(question: str):
