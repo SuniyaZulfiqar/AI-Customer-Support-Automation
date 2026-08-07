@@ -11,7 +11,7 @@ function TopCategories({ filters }) {
   async function loadData() {
     try {
       const res = await axios.get(
-        "http://127.0.0.1:8000/analytics/top-categories",
+        "https://ai-customer-support-automation-production-04e2.up.railway.app/analytics/top-categories",
         {
           params: filters,
         }

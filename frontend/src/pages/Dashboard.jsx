@@ -57,7 +57,7 @@ function Dashboard() {
 
     try {
       const res = await axios.get(
-        "http://127.0.0.1:8000/dashboard",
+        "https://ai-customer-support-automation-production-04e2.up.railway.app/dashboard",
         {
           params: currentFilters,
         }

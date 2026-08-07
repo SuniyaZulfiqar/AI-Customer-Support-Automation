@@ -31,7 +31,7 @@ function AICopilot() {
 
     try {
       const res = await axios.post(
-        "http://127.0.0.1:8000/copilot",
+        "https://ai-customer-support-automation-production-04e2.up.railway.app/copilot",
         {
           question: userQuestion,
         }

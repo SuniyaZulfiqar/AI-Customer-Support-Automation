@@ -17,7 +17,7 @@ function BusinessInsights() {
   async function loadInsights() {
     try {
       const res = await axios.get(
-        "http://127.0.0.1:8000/analytics/business-insights"
+        "https://ai-customer-support-automation-production-04e2.up.railway.app/analytics/business-insights"
       );
 
       setInsights(res.data.insights);

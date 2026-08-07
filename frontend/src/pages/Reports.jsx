@@ -22,7 +22,7 @@ function Reports() {
   async function loadReports() {
     try {
       const res = await axios.get(
-        "http://127.0.0.1:8000/reports/history"
+        "https://ai-customer-support-automation-production-04e2.up.railway.app/reports/history"
       );
 
       console.log("API RESPONSE:", res.data);
@@ -32,7 +32,7 @@ function Reports() {
       console.log("Reports after set:", res.data.reports);
 
       const dashboard = await axios.get(
-        "http://127.0.0.1:8000/dashboard"
+        "https://ai-customer-support-automation-production-04e2.up.railway.app/dashboard"
         );
 
         console.log("Dashboard:", dashboard.data);
@@ -126,7 +126,7 @@ function Reports() {
             <button
             onClick={() =>
                 window.open(
-                    "http://127.0.0.1:8000/reports/export/excel",
+                    "https://ai-customer-support-automation-production-04e2.up.railway.app/reports/export/excel",
                     "_blank"
                 )
             }
@@ -150,7 +150,7 @@ function Reports() {
             <button
               onClick={() =>
                 window.open(
-                  "http://127.0.0.1:8000/reports/export/csv",
+                  "https://ai-customer-support-automation-production-04e2.up.railway.app/reports/export/csv",
                   "_blank"
                 )
               }
