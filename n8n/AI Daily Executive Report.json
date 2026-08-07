@@ -1,0 +1,163 @@
+{
+  "name": "AI Daily Executive Report",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        352,
+        208
+      ],
+      "id": "409317ae-748c-4001-895b-6194d1f54152",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "MKG7NbzfelFnToyH",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5b348f05-a9aa-4225-bd9a-ba27a75f828e",
+      "name": "Daily Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\nCOUNT(*) AS total_tickets,\n\nSUM(CASE WHEN category='Complaint' THEN 1 ELSE 0 END) AS complaints,\n\nSUM(CASE WHEN category='Inquiry' THEN 1 ELSE 0 END) AS inquiries,\n\nSUM(CASE WHEN category='Sales' THEN 1 ELSE 0 END) AS sales,\n\nSUM(CASE WHEN category='Feedback' THEN 1 ELSE 0 END) AS feedback,\n\nSUM(CASE WHEN urgency='High' THEN 1 ELSE 0 END) AS high_priority\n\nFROM customer_analysis_new;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "2cf3ce29-7b35-4c80-a2ee-7a7dd7bb876a",
+      "name": "Fetch Dashboard KPIs",
+      "credentials": {
+        "postgres": {
+          "id": "iVTSODUAU50U8t50",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an Executive Customer Support Manager.\n\nGenerate a professional HTML email report.\n\nIMPORTANT RULES:\n- Output ONLY valid HTML.\n- Do NOT use Markdown (** ## -).\n- Do NOT wrap the HTML in ```html``` or code blocks.\n- Use:\n  - <h2> for the report title\n  - <h3> for section headings\n  - <p> for paragraphs\n  - <ul><li> for lists\n  - <hr> between sections\n\nAnalyze today's customer support statistics.\n\nTotal Tickets: {{$json.total_tickets}}\nComplaints: {{$json.complaints}}\nInquiries: {{$json.inquiries}}\nSales: {{$json.sales}}\nFeedback: {{$json.feedback}}\nHigh Priority Tickets: {{$json.high_priority}}\n\nGenerate:\n1. Executive Summary\n2. Biggest Issue\n3. Business Recommendation\n4. Overall Performance Score out of 10\n\nReturn ONLY HTML.",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        416,
+        0
+      ],
+      "id": "f04013fc-2816-470f-85dc-f4e2eec64e7b",
+      "name": "Generate Executive Summary (LLM)"
+    },
+    {
+      "parameters": {
+        "sendTo": "suniyazul46@gmail.com",
+        "subject": "Daily AI Executive Customer Support Report",
+        "message": "=<h2> Daily Executive Report</h2>\n\n<h3>Executive Summary</h3>\n<p>{{$json.executive_summary}}</p>\n\n<h3>Biggest Issue</h3>\n<p>{{$json.biggest_issue}}</p>\n\n<h3>Recommendation</h3>\n<p>{{$json.recommendation}}</p>\n\n<h3>Performance Score</h3>\n<p>{{$json.score}} / 10</p>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "eb4e1ec6-26f4-442b-afb1-211c82143486",
+      "name": "Send Executive Report",
+      "webhookId": "5f9500cd-df85-4c50-bda0-1b90f7d65533",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UUE9gg0QlMFrZ4zT",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Executive Summary (LLM)",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Dashboard KPIs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Dashboard KPIs": {
+      "main": [
+        [
+          {
+            "node": "Generate Executive Summary (LLM)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Executive Summary (LLM)": {
+      "main": [
+        [
+          {
+            "node": "Send Executive Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ccc71e4b-8b97-410e-943d-5f360ee32c05",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "008913fb0e1a3ab0c12ef39b518e6146f684d5fe4c2bd97acbb7517c09c4bd02"
+  },
+  "nodeGroups": [],
+  "id": "QPIpY3tG5Svhpu0c",
+  "tags": []
+}

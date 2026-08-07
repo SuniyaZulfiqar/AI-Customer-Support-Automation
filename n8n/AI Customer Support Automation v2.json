@@ -1,0 +1,1007 @@
+{
+  "name": "AI Customer Support Automation v2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "customer-support",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "06da92e3-f7ea-4be5-ba69-275d4b582c5a",
+      "name": "Customer Webhook",
+      "webhookId": "82d98e40-57fc-4c6b-b94b-a252552ccac8"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT EXISTS (\n    SELECT 1\n    FROM customer_analysis_new\n    WHERE LOWER(TRIM(customer_email)) =\n          LOWER(TRIM('{{ $json.body.customer_email.replace(/'/g, \"''\") }}'))\n\n      AND LOWER(\n            REGEXP_REPLACE(TRIM(message), '[[:punct:]]', '', 'g')\n          ) =\n          LOWER(\n            REGEXP_REPLACE(\n              TRIM('{{ $json.body.message.replace(/'/g, \"''\") }}'),\n              '[[:punct:]]',\n              '',\n              'g'\n            )\n          )\n) AS duplicate;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "ac83ded1-2a2b-4b86-a3b3-93fa2d1066b1",
+      "name": "Check Duplicate Ticket",
+      "credentials": {
+        "postgres": {
+          "id": "iVTSODUAU50U8t50",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ddaf5914-0af4-45e0-8d6c-14089aa0c658",
+              "leftValue": "={{$json.duplicate}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        0
+      ],
+      "id": "c7136066-ba42-4e37-a2c3-fc723ff8d33b",
+      "name": "Is Duplicate?"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Customer Webhook').item.json.body.customer_email }}",
+        "subject": "Duplicate Complaint Received",
+        "message": "=Hi {{ $('Customer Webhook').item.json.body.customer_name }},\n\nWe have already received this complaint:\n\n\"{{ $('Customer Webhook').item.json.body.message }}\"\n\nOur support team is already working on it.\n\nPlease do not submit the same complaint multiple times. We will contact you as soon as there is an update.\n\nThank you,\nAI Customer Support Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        -96
+      ],
+      "id": "7bb08a33-d3b6-49d2-a77f-4cc9c926e508",
+      "name": "Send Duplicate Email",
+      "webhookId": "3190d922-5c07-4811-8e50-cd78e5fbad12",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TWLmHUMoFxme8SED",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8000/analyze",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "customer_name",
+              "value": "={{ $('Customer Webhook').item.json.body.customer_name }}"
+            },
+            {
+              "name": "customer_email",
+              "value": "={{ $('Customer Webhook').item.json.body.customer_email }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $('Customer Webhook').item.json.body.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        96
+      ],
+      "id": "c920738a-dd33-4efe-8337-d56c4ef8f4fc",
+      "name": "AI Classification API"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{$json.category.trim()}}",
+                    "rightValue": "Complaint",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "61dc5fa7-f3f4-4d68-99e7-9258f332f068"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a838c0c1-4f9e-4edb-9ddc-83a0436e547d",
+                    "leftValue": "={{$json.category.trim()}}",
+                    "rightValue": "Inquiry",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4aef587f-2af1-4440-8bf8-6282388e0e71",
+                    "leftValue": "={{$json.category.trim()}}",
+                    "rightValue": "Sales",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ca416a78-fe54-40dd-ad7c-ebbd4da65d0c",
+                    "leftValue": "={{$json.category.trim()}}",
+                    "rightValue": "Feedback",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0b233639-b5d0-4c19-b345-efbd3d5e65e1",
+                    "leftValue": "={{$json.category.trim()}}",
+                    "rightValue": "Refund",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "cc392054-a2a3-4721-8d8a-c21954c6678a",
+                    "leftValue": "={{$json.category.trim()}}",
+                    "rightValue": "Billing",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "71dc247d-d17c-411f-a7c5-9e66f3f5468f",
+                    "leftValue": "={{$json.category.trim()}}",
+                    "rightValue": "Technical Support",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "382b4351-48cb-4351-bf4c-2b2dd8eb3063",
+                    "leftValue": "={{$json.category.trim()}}",
+                    "rightValue": "Order",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        224
+      ],
+      "id": "02382f00-0fb5-4c22-b249-d80429e5fcd3",
+      "name": "Route by Category"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0cfbf5bd-5937-4bdc-90b7-fc99b6130d25",
+              "name": "assigned_to",
+              "value": "Support Manager",
+              "type": "string"
+            },
+            {
+              "id": "41f71ff9-0c81-454c-8399-7d0130859df1",
+              "name": "ticket_status",
+              "value": "Open",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        -272
+      ],
+      "id": "7bdc74f2-b91b-4266-871f-d51ea7915f22",
+      "name": "Assign Complaint Team"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "419612a9-3c6e-4fcc-a144-d7e9ec16d803",
+              "name": "ticket_status",
+              "value": "New Inquiry",
+              "type": "string"
+            },
+            {
+              "id": "5e178f25-80cb-40c8-b3c1-3037580b1e0c",
+              "name": "assigned_to",
+              "value": "Information Desk",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        -80
+      ],
+      "id": "224f3ce8-25e6-41f5-ae3b-06d4765f969c",
+      "name": "Assign Inquiry Team"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7da41f19-ee95-468d-b58d-ef6c6d4c24ea",
+              "name": "ticket_status",
+              "value": "New Lead",
+              "type": "string"
+            },
+            {
+              "id": "7cf947f6-79b9-42eb-8d97-f3a81cd4435c",
+              "name": "assigned_to",
+              "value": "Sales Team",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        112
+      ],
+      "id": "06a60fed-9e1f-4c2e-90e5-0ad574a885a8",
+      "name": "Assign Sales Team"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "417572f4-b036-40a6-bbe4-14ec8aa9b17e",
+              "name": "ticket_status",
+              "value": "Received",
+              "type": "string"
+            },
+            {
+              "id": "7ed628fb-c1ea-4197-b3ef-5cc2863a6984",
+              "name": "assigned_to",
+              "value": "Customer Experience Team",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        304
+      ],
+      "id": "2b015386-08e6-44df-a0b4-f3ffc52bc7b7",
+      "name": "Assign Feedback Team"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c0158d49-08b8-4459-9c86-4eafdbe202e3",
+              "name": "ticket_status",
+              "value": "Refund Request",
+              "type": "string"
+            },
+            {
+              "id": "f4d5fd14-79ec-43e1-b961-804b19b0fc82",
+              "name": "assigned_to",
+              "value": "Finance Team",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        496
+      ],
+      "id": "b80764d9-234f-4f83-a352-3b7bd8ca91fb",
+      "name": "Assign Refund Team"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b25022dc-0af5-46e9-a0fd-2c9fe560fa71",
+              "name": "ticket_status",
+              "value": "Billing Review",
+              "type": "string"
+            },
+            {
+              "id": "d769726e-ddc8-4ab4-a24e-a1a46633c285",
+              "name": "assigned_to",
+              "value": "Billing Team",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1456,
+        688
+      ],
+      "id": "24092458-b5a5-4a07-a0c7-743f2e36cb6a",
+      "name": "Assign Billing Team"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "72957d7c-7ce2-46fc-aa8c-9902ea9e8d75",
+              "name": "ticket_status",
+              "value": "Open",
+              "type": "string"
+            },
+            {
+              "id": "5b78f8ab-2246-4670-abe2-d863981d19c2",
+              "name": "assigned_to",
+              "value": "Technical Support Team",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1472,
+        880
+      ],
+      "id": "546e2918-df4c-4ecf-8373-4c2cb5c17153",
+      "name": "Assign Tech Support Team"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8cf4d6e5-8e57-4c4f-a9fb-dfc419b62a77",
+              "name": "ticket_status",
+              "value": "Order Processing",
+              "type": "string"
+            },
+            {
+              "id": "c8c6ea42-703a-44f5-a139-71e38f1a490c",
+              "name": "assigned_to",
+              "value": "Order Management Team",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1472,
+        1072
+      ],
+      "id": "af747e6d-ca28-4055-99a8-b8b5b59420be",
+      "name": "Assign Order Team"
+    },
+    {
+      "parameters": {
+        "numberInputs": 8
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2112,
+        224
+      ],
+      "id": "ae3b3c09-97bc-47d4-a386-9d8027509e36",
+      "name": "Merge Ticket Data"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "customer_analysis_new",
+          "mode": "list",
+          "cachedResultName": "customer_analysis_new"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "customer_name": "={{$json.customer_name}}",
+            "message": "={{$json.message}}",
+            "category": "={{$json.category}}",
+            "sentiment": "={{$json.sentiment}}",
+            "urgency": "={{$json.urgency}}",
+            "response": "={{$json.response}}",
+            "customer_email": "={{$json.customer_email}}",
+            "ticket_status": "={{$json.ticket_status}}",
+            "assigned_to": "={{$json.assigned_to}}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "customer_name",
+              "displayName": "customer_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "category",
+              "displayName": "category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sentiment",
+              "displayName": "sentiment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "urgency",
+              "displayName": "urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "response",
+              "displayName": "response",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_email",
+              "displayName": "customer_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ticket_status",
+              "displayName": "ticket_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "assigned_to",
+              "displayName": "assigned_to",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        2320,
+        224
+      ],
+      "id": "9ca9044a-827e-49b1-8866-c87c39fe0688",
+      "name": "Save Ticket",
+      "credentials": {
+        "postgres": {
+          "id": "iVTSODUAU50U8t50",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{$json.customer_email}}",
+        "subject": "=Ticket Received - {{$json.category}}",
+        "message": "=Hi {{$json.customer_name}},  Your {{$json.category}} ticket has been received.  Status: {{$json.ticket_status}}  Assigned Team: {{$json.assigned_to}}  Thank you.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2528,
+        224
+      ],
+      "id": "fe6db18c-ec1c-4289-97aa-260d4330b332",
+      "name": "Send Confirmation Email",
+      "webhookId": "f40fd201-613a-43a0-aa94-56fcbd873cae",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "TWLmHUMoFxme8SED",
+          "name": "Gmail account 3"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Customer Webhook": {
+      "main": [
+        [
+          {
+            "node": "Check Duplicate Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Duplicate Ticket": {
+      "main": [
+        [
+          {
+            "node": "Is Duplicate?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Duplicate?": {
+      "main": [
+        [
+          {
+            "node": "Send Duplicate Email",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "AI Classification API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Duplicate Email": {
+      "main": [
+        []
+      ]
+    },
+    "AI Classification API": {
+      "main": [
+        [
+          {
+            "node": "Route by Category",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Category": {
+      "main": [
+        [
+          {
+            "node": "Assign Complaint Team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assign Inquiry Team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assign Sales Team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assign Feedback Team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assign Refund Team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assign Billing Team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assign Tech Support Team",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Assign Order Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assign Complaint Team": {
+      "main": [
+        [
+          {
+            "node": "Merge Ticket Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assign Inquiry Team": {
+      "main": [
+        [
+          {
+            "node": "Merge Ticket Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Assign Sales Team": {
+      "main": [
+        [
+          {
+            "node": "Merge Ticket Data",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Assign Feedback Team": {
+      "main": [
+        [
+          {
+            "node": "Merge Ticket Data",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Assign Refund Team": {
+      "main": [
+        [
+          {
+            "node": "Merge Ticket Data",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Assign Billing Team": {
+      "main": [
+        [
+          {
+            "node": "Merge Ticket Data",
+            "type": "main",
+            "index": 5
+          }
+        ]
+      ]
+    },
+    "Assign Tech Support Team": {
+      "main": [
+        [
+          {
+            "node": "Merge Ticket Data",
+            "type": "main",
+            "index": 6
+          }
+        ]
+      ]
+    },
+    "Assign Order Team": {
+      "main": [
+        [
+          {
+            "node": "Merge Ticket Data",
+            "type": "main",
+            "index": 7
+          }
+        ]
+      ]
+    },
+    "Merge Ticket Data": {
+      "main": [
+        [
+          {
+            "node": "Save Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Ticket": {
+      "main": [
+        [
+          {
+            "node": "Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Confirmation Email": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "094634b1-6923-4407-aaab-7d493aea2d08",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "008913fb0e1a3ab0c12ef39b518e6146f684d5fe4c2bd97acbb7517c09c4bd02"
+  },
+  "nodeGroups": [],
+  "id": "ggOJGauMAWUkaWRJ",
+  "tags": []
+}

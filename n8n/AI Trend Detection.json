@@ -1,0 +1,163 @@
+{
+  "name": "AI Trend Detection",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        352,
+        208
+      ],
+      "id": "ffc9e0ac-1ed2-451b-9c3e-78d5d2db2875",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "MKG7NbzfelFnToyH",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f47c1f6a-e3f8-4c5b-ab65-f9a94b28212f",
+      "name": "Trend Detection Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\ncustomer_name,\ncategory,\nsentiment,\nurgency,\nmessage,\nassigned_to\nFROM customer_analysis_new\nORDER BY id DESC\nLIMIT 50;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        208,
+        0
+      ],
+      "id": "f0083745-d0b0-40fc-83f8-26af7c003116",
+      "name": "Fetch Historical Ticket Data",
+      "credentials": {
+        "postgres": {
+          "id": "iVTSODUAU50U8t50",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the Head of Customer Experience.\n\nGenerate a professional HTML email report.\n\nRequirements:\n- Use HTML only.\n- Do NOT use Markdown.\n- Use:\n  - <h2> for the title\n  - <h3> for section headings\n  - <p> for paragraphs\n  - <ul><li> for bullet points\n  - <hr> between major sections\n- Keep spacing clean and readable.\n- Use professional business language.\n\nAnalyze the following customer support tickets:\n\n{{$json}}\n\nGenerate:\n\n1. Executive Summary\n2. Top 3 Customer Complaints\n3. Most Common Ticket Category\n4. Overall Customer Sentiment\n5. Team Workload\n6. Immediate Actions\n7. Long-Term Recommendations\n8. Next Week Prediction",
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        416,
+        0
+      ],
+      "id": "9f4cbe1f-f428-4d0f-addc-613978be27ca",
+      "name": "Detect Business Trends"
+    },
+    {
+      "parameters": {
+        "sendTo": "suniyazul46@gmail.com",
+        "subject": "AI Customer Trend Report",
+        "message": "=<html>\n<body style=\"font-family: Arial, Helvetica, sans-serif; line-height:1.7; color:#333;\">\n\n{{$json.text}}\n\n<hr>\n\n<p style=\"color:gray;font-size:12px;\">\nGenerated automatically by the\n<b>AI Customer Support Intelligence Platform</b>\n</p>\n\n</body>\n</html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        768,
+        0
+      ],
+      "id": "a68b2b74-364a-4f69-94ea-aa10bdd46716",
+      "name": "Send Trend Report",
+      "webhookId": "33a1f4b9-219a-4998-a423-3a273b781208",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "UUE9gg0QlMFrZ4zT",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Detect Business Trends",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trend Detection Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Historical Ticket Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Historical Ticket Data": {
+      "main": [
+        [
+          {
+            "node": "Detect Business Trends",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Business Trends": {
+      "main": [
+        [
+          {
+            "node": "Send Trend Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "103270e1-6e7c-4649-8ac4-c3f67cb9c7ad",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "008913fb0e1a3ab0c12ef39b518e6146f684d5fe4c2bd97acbb7517c09c4bd02"
+  },
+  "nodeGroups": [],
+  "id": "Kbf9Ku33BT7HX8ow",
+  "tags": []
+}
