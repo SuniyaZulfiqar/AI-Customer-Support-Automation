@@ -1,86 +1,113 @@
+import io
+
 import pandas as pd
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
+
 from src.database.connection import get_connection
-
-
-def get_report_data():
-    conn = get_connection()
-
-    query = """
-    SELECT *
-    FROM customer_analysis_new
-    ORDER BY id DESC;
-    """
-
-    df = pd.read_sql(query, conn)
-    conn.close()
-
-    return {
-        "total_reports": len(df),
-        "reports": df.to_dict(orient="records")
-    }
 
 
 def get_report_history():
     conn = get_connection()
 
-    query = """
-    SELECT
-        id,
-        customer_name,
-        category,
-        urgency,
-        status,
-        created_at
-    FROM customer_analysis_new
-    ORDER BY id DESC
-    LIMIT 20;
-    """
+    try:
+        query = """
+            SELECT
+                id,
+                customer_name,
+                category,
+                urgency,
+                ticket_status AS status
+            FROM customer_analysis_new
+            ORDER BY id DESC
+        """
 
-    df = pd.read_sql(query, conn)
-    conn.close()
+        df = pd.read_sql(query, conn)
 
-    return {
-        "reports": df.to_dict(orient="records")
-    }
+        return {
+            "reports": df.to_dict(orient="records")
+        }
+
+    finally:
+        conn.close()
+
+
+def get_report_data():
+    conn = get_connection()
+
+    try:
+        query = """
+            SELECT *
+            FROM customer_analysis_new
+        """
+
+        df = pd.read_sql(query, conn)
+
+        return {
+            "reports": df.to_dict(orient="records")
+        }
+
+    finally:
+        conn.close()
+
+
+def _get_export_dataframe():
+    conn = get_connection()
+
+    try:
+        query = """
+            SELECT *
+            FROM customer_analysis_new
+        """
+
+        return pd.read_sql(query, conn)
+
+    finally:
+        conn.close()
 
 
 def export_csv():
-    conn = get_connection()
+    df = _get_export_dataframe()
 
-    df = pd.read_sql(
-        "SELECT * FROM customer_analysis_new",
-        conn,
-    )
+    csv_data = df.to_csv(index=False)
 
-    conn.close()
-
-    filename = "customer_report.csv"
-
-    df.to_csv(filename, index=False)
-
-    return FileResponse(
-        filename,
+    return StreamingResponse(
+        iter([csv_data]),
         media_type="text/csv",
-        filename=filename,
+        headers={
+            "Content-Disposition": (
+                "attachment; filename=customer_report.csv"
+            )
+        },
     )
 
 
 def export_excel():
-    conn = get_connection()
+    df = _get_export_dataframe()
 
-    df = pd.read_sql(
-        "SELECT * FROM customer_analysis_new",
-        conn,
-    )
+    output = io.BytesIO()
 
-    conn.close()
+    with pd.ExcelWriter(
+        output,
+        engine="openpyxl"
+    ) as writer:
 
-    filename = "customer_report.xlsx"
+        df.to_excel(
+            writer,
+            index=False,
+            sheet_name="Customer Support"
+        )
 
-    df.to_excel(filename, index=False)
+    output.seek(0)
 
-    return FileResponse(
-        filename,
-        filename=filename,
+    return StreamingResponse(
+        output,
+        media_type=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        ),
+        headers={
+            "Content-Disposition": (
+                "attachment; filename=customer_report.xlsx"
+            )
+        },
     )
