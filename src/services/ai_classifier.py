@@ -1,87 +1,45 @@
-import ollama
+import os
+from groq import Groq
 
-def classify_message(message):
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
+
+def classify_message(message: str):
     prompt = f"""
 You are an AI customer support classifier.
 
-Your job is to classify the customer's message.
-
-Choose EXACTLY ONE category from this list:
-
-- Complaint
-- Billing
-- Refund
-- Sales
-- Technical Support
-- Order
-- Inquiry
-- Feedback
-
-Category Rules:
-
-Complaint:
-Customer is unhappy with service or product quality.
-
-Billing:
-Payment failed, charged twice, invoice, subscription payment, billing problem.
-
-Refund:
-Customer explicitly wants their money back or asks for a refund.
-
-Sales:
-Pricing, upgrade, purchase, subscription plans, product information before buying.
-
-Technical Support:
-Login issue, password reset, website error, application bug, technical problem.
-
-Order:
-Shipping, tracking, delivery, order status.
-
-Inquiry:
-General question, business hours, policies, company information.
-
-Feedback:
-Suggestion, compliment, appreciation, review.
-
-Also determine:
-
-Sentiment:
-Positive
-Neutral
-Negative
-
-Urgency:
-Low
-Medium
-High
-
-Return ONLY valid JSON.
-
-Example:
-
-{{
-  "category":"Billing",
-  "sentiment":"Negative",
-  "urgency":"High",
-  "response":"Forward to Billing Team"
-}}
+Analyze the customer message and return ONLY valid JSON.
 
 Customer message:
+{message}
 
-\"\"\"{message}\"\"\"
+Return exactly:
+
+{{
+  "category": "Complaint",
+  "sentiment": "Negative",
+  "urgency": "High"
+}}
+
+Allowed category values:
+Complaint, Refund, Billing, Sales, Technical Support, Order, General Inquiry
+
+Allowed sentiment values:
+Positive, Neutral, Negative
+
+Allowed urgency values:
+Low, Medium, High
 """
 
-    response = ollama.chat(
-        model="llama3.2",
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
         messages=[
             {
-                "role":"user",
-                "content":prompt
+                "role": "user",
+                "content": prompt
             }
-        ]
+        ],
+        temperature=0
     )
 
-    print(response["message"]["content"])
-
-    return response["message"]["content"]
+    return response.choices[0].message.content.strip()

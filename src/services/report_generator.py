@@ -1,42 +1,43 @@
-import ollama
+import os
+from groq import Groq
+
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 
 def generate_report(question, sql, results):
-
     prompt = f"""
-You are an AI Customer Support Business Intelligence Assistant.
+You are an AI business intelligence assistant.
 
-Your job is to help business managers understand customer support data.
+Generate a concise, professional answer to the user's question
+based ONLY on the SQL query and database results provided below.
 
-Manager's Question:
+User question:
 {question}
 
-Query Results:
+SQL query:
+{sql}
+
+Database results:
 {results}
 
-Instructions:
-
-- Never greet the user.
-- Never say "Dear User".
-- Never mention SQL, queries, databases, or technical details.
-- Explain the result in clear business language.
-- Keep the answer between 50 and 120 words.
-- If the data shows a problem, provide one practical recommendation.
-- Write like an executive business analyst.
-
-Example style:
-
-"There are currently 10 complaint tickets. Complaints are the most common issue being reported by customers. I recommend reviewing high-priority complaint cases first and analyzing recurring issues to reduce future complaint volume."
+Rules:
+- Answer the user's question directly.
+- Do not invent information.
+- Do not mention that you are an AI.
+- Do not generate SQL.
+- Use the database results as the source of truth.
+- Keep the answer concise and professional.
 """
 
-    response = ollama.chat(
-        model="llama3.2",
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
         messages=[
             {
                 "role": "user",
                 "content": prompt
             }
-        ]
+        ],
+        temperature=0.2
     )
 
-    return response["message"]["content"]
+    return response.choices[0].message.content.strip()
